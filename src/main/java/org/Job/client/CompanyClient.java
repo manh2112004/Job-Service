@@ -20,9 +20,13 @@ public class CompanyClient {
         String url = "http://company-service/internal/companies/" + companyId + "/users/" + userId;
         try {
             return restTemplate.getForObject(url, CompanyMemberResponse.class);
-        } catch (HttpClientErrorException.NotFound e) {
-            log.warn("Company member validation failed. Company or member not found: companyId={}, userId={}", companyId, userId);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Công ty không tồn tại hoặc bạn không có quyền đăng tuyển cho công ty này");
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            if (e.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND) {
+                log.warn("Company member validation failed. Company or member not found: companyId={}, userId={}", companyId, userId);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Công ty không tồn tại hoặc bạn không có quyền đăng tuyển cho công ty này");
+            }
+            log.error("HTTP error calling Company Service: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể xác thực thông tin công ty từ Company Service");
         } catch (Exception e) {
             log.error("Error calling Company Service for member validation: companyId={}, userId={}", companyId, userId, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể xác thực thông tin công ty từ Company Service");
