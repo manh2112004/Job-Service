@@ -99,4 +99,73 @@ public class JobEventHandler {
             }
         }
     }
+    @EventHandler
+    @Transactional
+    public void on(JobUpdatedEvent event) {
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        if (event.getTitle() != null) job.setTitle(event.getTitle());
+        if (event.getDescription() != null) job.setDescription(event.getDescription());
+        if (event.getResponsibilities() != null) job.setResponsibilities(event.getResponsibilities());
+        if (event.getWhoYouAre() != null) job.setWhoYouAre(event.getWhoYouAre());
+        if (event.getNiceToHaves() != null) job.setNiceToHaves(event.getNiceToHaves());
+        if (event.getLocation() != null) job.setLocation(event.getLocation());
+        if (event.getWorkingType() != null) job.setWorkingType(event.getWorkingType());
+        if (event.getEmploymentType() != null) job.setEmploymentType(event.getEmploymentType());
+        if (event.getLevel() != null) job.setLevel(event.getLevel());
+        if (event.getMinSalary() != null) job.setMinSalary(event.getMinSalary());
+        if (event.getMaxSalary() != null) job.setMaxSalary(event.getMaxSalary());
+        if (event.getCurrency() != null) job.setCurrency(event.getCurrency());
+        if (event.getCapacity() != null) job.setCapacity(event.getCapacity());
+        if (event.getDeadline() != null) job.setDeadline(event.getDeadline());
+        if (event.getStatus() != null) job.setStatus(event.getStatus());
+        if (event.getFeatured() != null) job.setFeatured(event.getFeatured());
+        if (event.getUrgent() != null) job.setUrgent(event.getUrgent());
+
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+
+        // Update skills if provided
+        if (event.getSkills() != null) {
+            jobSkillRepository.deleteAllByJobId(event.getJobId());
+            for (JobCreatedEvent.JobSkillEventInfo skillInfo : event.getSkills()) {
+                JobSkill skill = JobSkill.builder()
+                        .id(UUID.randomUUID().toString())
+                        .jobId(event.getJobId())
+                        .skillName(skillInfo.getSkillName().trim())
+                        .required(skillInfo.getRequired() != null ? skillInfo.getRequired() : false)
+                        .build();
+                jobSkillRepository.save(skill);
+            }
+        }
+
+        // Update benefits if provided
+        if (event.getBenefits() != null) {
+            jobBenefitRepository.deleteAllByJobId(event.getJobId());
+            for (JobCreatedEvent.JobBenefitEventInfo benefitInfo : event.getBenefits()) {
+                JobBenefit benefit = JobBenefit.builder()
+                        .id(UUID.randomUUID().toString())
+                        .jobId(event.getJobId())
+                        .title(benefitInfo.getTitle().trim())
+                        .description(benefitInfo.getDescription() != null ? benefitInfo.getDescription().trim() : null)
+                        .icon(benefitInfo.getIcon() != null ? benefitInfo.getIcon().trim() : null)
+                        .build();
+                jobBenefitRepository.save(benefit);
+            }
+        }
+
+        // Update category mappings if provided
+        if (event.getCategoryIds() != null) {
+            jobCategoryMappingRepository.deleteAllByJobId(event.getJobId());
+            for (String categoryId : event.getCategoryIds()) {
+                JobCategoryMapping mapping = JobCategoryMapping.builder()
+                        .id(UUID.randomUUID().toString())
+                        .jobId(event.getJobId())
+                        .categoryId(categoryId.trim())
+                        .build();
+                jobCategoryMappingRepository.save(mapping);
+            }
+        }
+    }
 }

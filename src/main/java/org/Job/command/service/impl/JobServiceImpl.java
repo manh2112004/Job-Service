@@ -3,7 +3,11 @@ package org.Job.command.service.impl;
 import org.Job.client.CompanyClient;
 import org.Job.client.dto.CompanyMemberResponse;
 import org.Job.command.command.CreateJobCommand;
+import org.Job.command.command.UpdateJobCommand;
+import org.Job.command.data.Job;
+import org.Job.command.data.JobRepository;
 import org.Job.command.model.request.CreateJobRequest;
+import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.service.JobService;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +28,10 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     private CompanyClient companyClient;
+
+    @Autowired
+    private JobRepository jobRepository;
+
 
     @Override
     public CompletableFuture<String> createJob(String userId, CreateJobRequest request) {
@@ -77,6 +85,67 @@ public class JobServiceImpl implements JobService {
                                 .build())
                         .collect(Collectors.toList()))
                 .categoryIds(request.getCategoryIds() == null ? Collections.emptyList() : request.getCategoryIds().stream()
+                        .map(String::trim)
+                        .collect(Collectors.toList()))
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateJob(String userId, String jobId, UpdateJobRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        UpdateJobCommand command = UpdateJobCommand.builder()
+                .jobId(jobId)
+                .title(request.getTitle() != null ? request.getTitle().trim() : null)
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .responsibilities(request.getResponsibilities() != null ? request.getResponsibilities().trim() : null)
+                .whoYouAre(request.getWhoYouAre() != null ? request.getWhoYouAre().trim() : null)
+                .niceToHaves(request.getNiceToHaves() != null ? request.getNiceToHaves().trim() : null)
+                .location(request.getLocation() != null ? request.getLocation().trim() : null)
+                .workingType(request.getWorkingType())
+                .employmentType(request.getEmploymentType())
+                .level(request.getLevel())
+                .minSalary(request.getMinSalary())
+                .maxSalary(request.getMaxSalary())
+                .currency(request.getCurrency() != null ? request.getCurrency().trim() : null)
+                .capacity(request.getCapacity())
+                .deadline(request.getDeadline())
+                .status(request.getStatus())
+                .featured(request.getFeatured())
+                .urgent(request.getUrgent())
+                .skills(request.getSkills() == null ? null : request.getSkills().stream()
+                        .map(s -> CreateJobCommand.JobSkillCommandInfo.builder()
+                                .skillName(s.getSkillName().trim())
+                                .required(s.getRequired())
+                                .build())
+                        .collect(Collectors.toList()))
+                .benefits(request.getBenefits() == null ? null : request.getBenefits().stream()
+                        .map(b -> CreateJobCommand.JobBenefitCommandInfo.builder()
+                                .title(b.getTitle().trim())
+                                .description(b.getDescription() != null ? b.getDescription().trim() : null)
+                                .icon(b.getIcon() != null ? b.getIcon().trim() : null)
+                                .build())
+                        .collect(Collectors.toList()))
+                .categoryIds(request.getCategoryIds() == null ? null : request.getCategoryIds().stream()
                         .map(String::trim)
                         .collect(Collectors.toList()))
                 .build();
