@@ -34,4 +34,12 @@ public class JobCommandController {
     ) {
         return jobService.updateJob(jwt.getSubject(), jobId, request);
     }
+
+    @PutMapping("/{jobId}/publish")
+    public CompletableFuture<String> publishJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.publishJob(jwt.getSubject(), jobId);
+    }
 }

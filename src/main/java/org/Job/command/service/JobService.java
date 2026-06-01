@@ -9,4 +9,6 @@ public interface JobService {
     CompletableFuture<String> createJob(String userId, CreateJobRequest request);
 
     CompletableFuture<String> updateJob(String userId, String jobId, UpdateJobRequest request);
+
+    CompletableFuture<String> publishJob(String userId, String jobId);
 }

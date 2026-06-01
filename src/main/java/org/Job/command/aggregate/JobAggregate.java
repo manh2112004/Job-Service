@@ -2,8 +2,10 @@ package org.Job.command.aggregate;
 
 import org.Job.command.command.CreateJobCommand;
 import org.Job.command.command.UpdateJobCommand;
+import org.Job.command.command.PublishJobCommand;
 import org.Job.command.event.JobCreatedEvent;
 import org.Job.command.event.JobUpdatedEvent;
+import org.Job.command.event.JobPublishedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -109,6 +111,20 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobUpdatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(PublishJobCommand command) {
+        AggregateLifecycle.apply(JobPublishedEvent.builder()
+                .jobId(command.getJobId())
+                .publishedAt(java.time.LocalDateTime.now())
+                .build());
+        return "Xuất bản công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobPublishedEvent event) {
         this.jobId = event.getJobId();
     }
 }

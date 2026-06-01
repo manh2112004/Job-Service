@@ -168,4 +168,16 @@ public class JobEventHandler {
             }
         }
     }
+
+    @EventHandler
+    @Transactional
+    public void on(JobPublishedEvent event) {
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        job.setStatus(JobStatus.OPEN);
+        job.setPublishedAt(event.getPublishedAt());
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
 }
