@@ -5,6 +5,8 @@ import org.Job.client.dto.CompanyMemberResponse;
 import org.Job.command.command.CreateJobCommand;
 import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
+import org.Job.command.command.DeleteJobCommand;
+import org.Job.command.command.CloseJobCommand;
 import org.Job.command.data.Job;
 import org.Job.command.data.JobRepository;
 import org.Job.command.model.request.CreateJobRequest;
@@ -176,6 +178,62 @@ public class JobServiceImpl implements JobService {
         }
 
         PublishJobCommand command = PublishJobCommand.builder()
+                .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteJob(String userId, String jobId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa công việc này");
+            }
+        }
+
+        DeleteJobCommand command = DeleteJobCommand.builder()
+                .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> closeJob(String userId, String jobId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền đóng công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền đóng công việc này");
+            }
+        }
+
+        CloseJobCommand command = CloseJobCommand.builder()
                 .jobId(jobId)
                 .build();
 

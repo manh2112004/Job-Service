@@ -3,9 +3,13 @@ package org.Job.command.aggregate;
 import org.Job.command.command.CreateJobCommand;
 import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
+import org.Job.command.command.DeleteJobCommand;
+import org.Job.command.command.CloseJobCommand;
 import org.Job.command.event.JobCreatedEvent;
 import org.Job.command.event.JobUpdatedEvent;
 import org.Job.command.event.JobPublishedEvent;
+import org.Job.command.event.JobDeletedEvent;
+import org.Job.command.event.JobClosedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -125,6 +129,32 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobPublishedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(DeleteJobCommand command) {
+        AggregateLifecycle.apply(JobDeletedEvent.builder()
+                .jobId(command.getJobId())
+                .build());
+        return "Xóa công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobDeletedEvent event) {
+        AggregateLifecycle.markDeleted();
+    }
+
+    @CommandHandler
+    public String handle(CloseJobCommand command) {
+        AggregateLifecycle.apply(JobClosedEvent.builder()
+                .jobId(command.getJobId())
+                .build());
+        return "Đóng công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobClosedEvent event) {
         this.jobId = event.getJobId();
     }
 }

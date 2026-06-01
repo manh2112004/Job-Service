@@ -11,4 +11,10 @@ public interface JobService {
     CompletableFuture<String> updateJob(String userId, String jobId, UpdateJobRequest request);
 
     CompletableFuture<String> publishJob(String userId, String jobId);
+
+    CompletableFuture<String> deleteJob(String userId, String jobId);
+
+    CompletableFuture<String> closeJob(String userId, String jobId);
 }
+
+

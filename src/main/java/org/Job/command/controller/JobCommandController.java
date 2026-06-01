@@ -42,4 +42,21 @@ public class JobCommandController {
     ) {
         return jobService.publishJob(jwt.getSubject(), jobId);
     }
+
+    @DeleteMapping("/{jobId}")
+    public CompletableFuture<String> deleteJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.deleteJob(jwt.getSubject(), jobId);
+    }
+
+    @PutMapping("/{jobId}/close")
+    public CompletableFuture<String> closeJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.closeJob(jwt.getSubject(), jobId);
+    }
 }
+
