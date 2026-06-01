@@ -28,4 +28,17 @@ public class CompanyClient {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể xác thực thông tin công ty từ Company Service");
         }
     }
+
+    public org.Job.client.dto.CompanyResponse getCompany(String companyId) {
+        String url = "http://company-service/internal/companies/" + companyId;
+        try {
+            return restTemplate.getForObject(url, org.Job.client.dto.CompanyResponse.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("Company not found: companyId={}", companyId);
+            return null;
+        } catch (Exception e) {
+            log.error("Error calling Company Service to fetch company info: companyId={}", companyId, e);
+            return null;
+        }
+    }
 }
