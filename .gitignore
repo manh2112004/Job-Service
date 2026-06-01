@@ -1,0 +1,78 @@
+# =========================================================================
+# 1. FILE NGUY HIỂM & BẢO MẬT (TUYỆT ĐỐI KHÔNG PUSH)
+# =========================================================================
+# File cấu hình chứa mật khẩu database, mật khẩu email, secret key, JWT token...
+**/application-*.properties
+**/application-*.yml
+**/application-*.yaml
+**/config/*.properties
+**/config/*.yml
+**/config/*.yaml
+.env
+.env.*
+*.properties
+*.yml
+*.yaml
+
+# Các file chứa key bảo mật, chứng chỉ, token cá nhân
+*.pem
+*.key
+*.pub
+*.p12
+*.pfx
+*.jks
+credentials.json
+client_secret.json
+
+# =========================================================================
+# 2. FILE RÁC CỦA HỆ ĐIỀU HÀNH (Ubuntu/Linux & Windows)
+# =========================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# =========================================================================
+# 3. FILE RÁC CỦA IDE (IntelliJ IDEA, VS Code, Eclipse)
+# =========================================================================
+# Cấu hình riêng của IntelliJ IDEA (Không push vì dễ gây xung đột giữa các máy)
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Cấu hình VS Code nếu bạn có dùng để sửa nhanh
+.vscode/
+.history/
+
+# Cấu hình Eclipse
+.metadata/
+.classpath
+.project
+.settings/
+*.launch
+
+# =========================================================================
+# 4. FILE SINH RA KHI BUILD VÀ CHẠY ỨNG DỤNG (Mã nguồn đã biên dịch)
+# =========================================================================
+# Thư mục chứa file .class và file .jar sau khi build Maven
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Thư mục log hệ thống sinh ra khi chạy ứng dụng
+logs/
+*.log
+
+# Thư mục dữ liệu tạm của hệ thống
+.tmp/
+tmp/
