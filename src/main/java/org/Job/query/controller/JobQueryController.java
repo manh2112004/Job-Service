@@ -4,14 +4,18 @@ import org.Job.constant.EmploymentType;
 import org.Job.constant.JobLevel;
 import org.Job.constant.WorkingType;
 import org.Job.query.model.response.JobDetailResponse;
+import org.Job.query.model.response.JobListResponse;
 import org.Job.query.model.response.JobPageResponse;
+import org.Job.query.model.response.JobResponse;
 import org.Job.query.queries.GetJobDetailQuery;
 import org.Job.query.queries.GetJobsQuery;
+import org.Job.query.queries.GetSimilarJobsQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -45,5 +49,21 @@ public class JobQueryController {
                 query,
                 ResponseTypes.instanceOf(JobPageResponse.class)
         );
+    }
+
+    @GetMapping("/{jobId}/similar")
+    public CompletableFuture<List<JobResponse>> getSimilarJobs(
+            @PathVariable String jobId,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) List<String> skills,
+            @RequestParam(required = false) String companyId,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) EmploymentType employmentType
+    ) {
+        return queryGateway.query(
+                new GetSimilarJobsQuery(jobId, size, categoryId, skills, companyId, location, employmentType),
+                ResponseTypes.instanceOf(JobListResponse.class)
+        ).thenApply(JobListResponse::getJobs);
     }
 }

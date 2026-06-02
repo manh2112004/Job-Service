@@ -8,5 +8,6 @@ import java.util.List;
 @Repository
 public interface JobCategoryMappingRepository extends JpaRepository<JobCategoryMapping, String> {
     List<JobCategoryMapping> findAllByJobId(String jobId);
+    List<JobCategoryMapping> findAllByJobIdIn(List<String> jobIds);
     void deleteAllByJobId(String jobId);
 }
