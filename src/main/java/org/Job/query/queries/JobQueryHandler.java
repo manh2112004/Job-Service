@@ -6,6 +6,8 @@ import org.Job.command.data.*;
 import org.Job.constant.EmploymentType;
 import org.Job.constant.JobStatus;
 import org.Job.query.model.response.JobDetailResponse;
+import org.Job.query.model.response.JobCategoryListResponse;
+import org.Job.query.model.response.JobCategoryResponse;
 import org.Job.query.model.response.JobListResponse;
 import org.Job.query.model.response.JobPageResponse;
 import org.Job.query.model.response.JobResponse;
@@ -556,5 +558,20 @@ public class JobQueryHandler {
                 .collect(Collectors.toList());
 
         return new JobListResponse(dtoList);
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobCategoryListResponse handle(GetJobCategoriesQuery query) {
+        List<JobCategoryResponse> list = jobCategoryRepository.findAll().stream()
+                .map(c -> JobCategoryResponse.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .slug(c.getSlug())
+                        .description(c.getDescription())
+                        .active(c.getActive())
+                        .build())
+                .collect(Collectors.toList());
+        return new JobCategoryListResponse(list);
     }
 }
