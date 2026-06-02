@@ -4,6 +4,7 @@ import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
 import org.Job.command.model.request.UpdateJobSkillRequest;
+import org.Job.command.model.request.CreateJobSkillRequest;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,8 @@ public interface JobService {
     CompletableFuture<String> updateJobSkills(String userId, String jobId, UpdateJobSkillsRequest request);
 
     CompletableFuture<String> updateSingleJobSkill(String userId, String skillId, UpdateJobSkillRequest request);
+
+    CompletableFuture<String> addJobSkill(String userId, String jobId, CreateJobSkillRequest request);
 }
 
 

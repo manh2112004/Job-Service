@@ -5,6 +5,7 @@ import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
 import org.Job.command.model.request.UpdateJobSkillRequest;
+import org.Job.command.model.request.CreateJobSkillRequest;
 import org.Job.command.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -77,6 +78,15 @@ public class JobCommandController {
             @Valid @RequestBody UpdateJobSkillRequest request
     ) {
         return jobService.updateSingleJobSkill(jwt.getSubject(), skillId, request);
+    }
+
+    @PostMapping("/{jobId}/skills")
+    public CompletableFuture<String> addJobSkill(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId,
+            @Valid @RequestBody CreateJobSkillRequest request
+    ) {
+        return jobService.addJobSkill(jwt.getSubject(), jobId, request);
     }
 }
 

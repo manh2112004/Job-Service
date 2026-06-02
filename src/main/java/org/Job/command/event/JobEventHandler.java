@@ -245,5 +245,22 @@ public class JobEventHandler {
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(JobSkillCreatedEvent event) {
+        JobSkill skill = JobSkill.builder()
+                .id(event.getSkillId())
+                .jobId(event.getJobId())
+                .skillName(event.getSkillName().trim())
+                .required(event.getRequired() != null ? event.getRequired() : false)
+                .build();
+        jobSkillRepository.save(skill);
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
 }
 
