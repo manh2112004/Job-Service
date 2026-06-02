@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface JobCategoryRepository extends JpaRepository<JobCategory, String> {
+    boolean existsByName(String name);
 }
