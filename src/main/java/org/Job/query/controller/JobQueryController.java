@@ -10,6 +10,7 @@ import org.Job.query.model.response.JobResponse;
 import org.Job.query.queries.GetJobDetailQuery;
 import org.Job.query.queries.GetJobsQuery;
 import org.Job.query.queries.GetSimilarJobsQuery;
+import org.Job.query.queries.GetLatestJobsQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,16 @@ public class JobQueryController {
     ) {
         return queryGateway.query(
                 new GetSimilarJobsQuery(jobId, size, categoryId, skills, companyId, location, employmentType),
+                ResponseTypes.instanceOf(JobListResponse.class)
+        ).thenApply(JobListResponse::getJobs);
+    }
+
+    @GetMapping("/latest")
+    public CompletableFuture<List<JobResponse>> getLatestJobs(
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return queryGateway.query(
+                new GetLatestJobsQuery(size),
                 ResponseTypes.instanceOf(JobListResponse.class)
         ).thenApply(JobListResponse::getJobs);
     }
