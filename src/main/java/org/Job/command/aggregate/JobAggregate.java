@@ -4,6 +4,7 @@ import org.Job.command.command.CreateJobCommand;
 import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
 import org.Job.command.command.ApproveJobCommand;
+import org.Job.command.command.RejectJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
@@ -22,6 +23,7 @@ import org.Job.command.event.JobBenefitDeletedEvent;
 import org.Job.command.event.JobUpdatedEvent;
 import org.Job.command.event.JobPublishedEvent;
 import org.Job.command.event.JobApprovedEvent;
+import org.Job.command.event.JobRejectedEvent;
 import org.Job.command.event.JobDeletedEvent;
 import org.Job.command.event.JobClosedEvent;
 import org.axonframework.commandhandling.CommandHandler;
@@ -157,6 +159,20 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobApprovedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(RejectJobCommand command) {
+        AggregateLifecycle.apply(JobRejectedEvent.builder()
+                .jobId(command.getJobId())
+                .rejectedAt(java.time.LocalDateTime.now())
+                .build());
+        return "Từ chối công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobRejectedEvent event) {
         this.jobId = event.getJobId();
     }
 

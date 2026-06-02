@@ -1,6 +1,7 @@
 package org.Job.command.controller;
 
 import org.Job.command.command.ApproveJobCommand;
+import org.Job.command.command.RejectJobCommand;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,26 @@ public class AdminJobCommandController {
         }
 
         ApproveJobCommand command = ApproveJobCommand.builder()
+                .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @PutMapping("/{jobId}/reject")
+    public CompletableFuture<String> rejectJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền thực hiện hành động này");
+        }
+
+        RejectJobCommand command = RejectJobCommand.builder()
                 .jobId(jobId)
                 .build();
 
