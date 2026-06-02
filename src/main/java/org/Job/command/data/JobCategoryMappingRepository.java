@@ -10,4 +10,6 @@ public interface JobCategoryMappingRepository extends JpaRepository<JobCategoryM
     List<JobCategoryMapping> findAllByJobId(String jobId);
     List<JobCategoryMapping> findAllByJobIdIn(List<String> jobIds);
     void deleteAllByJobId(String jobId);
+    void deleteAllByCategoryId(String categoryId);
 }
+

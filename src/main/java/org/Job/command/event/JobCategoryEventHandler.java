@@ -2,6 +2,7 @@ package org.Job.command.event;
 
 import org.Job.command.data.JobCategory;
 import org.Job.command.data.JobCategoryRepository;
+import org.Job.command.data.JobCategoryMappingRepository;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,9 @@ public class JobCategoryEventHandler {
 
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
+
+    @Autowired
+    private JobCategoryMappingRepository jobCategoryMappingRepository;
 
     @EventHandler
     @Transactional
@@ -39,5 +43,13 @@ public class JobCategoryEventHandler {
 
         jobCategoryRepository.save(category);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(JobCategoryDeletedEvent event) {
+        jobCategoryMappingRepository.deleteAllByCategoryId(event.getId());
+        jobCategoryRepository.deleteById(event.getId());
+    }
 }
+
 

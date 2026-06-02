@@ -2,8 +2,10 @@ package org.Job.command.aggregate;
 
 import org.Job.command.command.CreateJobCategoryCommand;
 import org.Job.command.command.UpdateJobCategoryCommand;
+import org.Job.command.command.DeleteJobCategoryCommand;
 import org.Job.command.event.JobCategoryCreatedEvent;
 import org.Job.command.event.JobCategoryUpdatedEvent;
+import org.Job.command.event.JobCategoryDeletedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -51,5 +53,19 @@ public class JobCategoryAggregate {
     public void on(JobCategoryUpdatedEvent event) {
         this.id = event.getId();
     }
+
+    @CommandHandler
+    public String handle(DeleteJobCategoryCommand command) {
+        AggregateLifecycle.apply(JobCategoryDeletedEvent.builder()
+                .id(command.getId())
+                .build());
+        return "Xóa danh mục công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobCategoryDeletedEvent event) {
+        AggregateLifecycle.markDeleted();
+    }
 }
+
 

@@ -7,6 +7,7 @@ import org.Job.command.service.JobCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -39,5 +40,14 @@ public class JobCategoryCommandController {
     ) {
         return jobCategoryService.updateJobCategory(jwt, categoryId, request);
     }
+
+    @DeleteMapping("/{categoryId}")
+    public CompletableFuture<String> deleteJobCategory(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String categoryId
+    ) {
+        return jobCategoryService.deleteJobCategory(jwt, categoryId);
+    }
 }
+
 

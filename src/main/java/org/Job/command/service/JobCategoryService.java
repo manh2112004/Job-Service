@@ -9,5 +9,6 @@ import java.util.concurrent.CompletableFuture;
 public interface JobCategoryService {
     CompletableFuture<String> createJobCategory(Jwt jwt, CreateJobCategoryRequest request);
     CompletableFuture<String> updateJobCategory(Jwt jwt, String categoryId, UpdateJobCategoryRequest request);
+    CompletableFuture<String> deleteJobCategory(Jwt jwt, String categoryId);
 }
 

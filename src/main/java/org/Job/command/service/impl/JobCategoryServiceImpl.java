@@ -2,6 +2,7 @@ package org.Job.command.service.impl;
 
 import org.Job.command.command.CreateJobCategoryCommand;
 import org.Job.command.command.UpdateJobCategoryCommand;
+import org.Job.command.command.DeleteJobCategoryCommand;
 import org.Job.command.data.JobCategoryRepository;
 import org.Job.command.model.request.CreateJobCategoryRequest;
 import org.Job.command.model.request.UpdateJobCategoryRequest;
@@ -94,6 +95,28 @@ public class JobCategoryServiceImpl implements JobCategoryService {
 
         return commandGateway.send(command);
     }
+
+    @Override
+    public CompletableFuture<String> deleteJobCategory(Jwt jwt, String categoryId) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền quản lý danh mục");
+        }
+
+        if (!jobCategoryRepository.existsById(categoryId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục công việc");
+        }
+
+        DeleteJobCategoryCommand command = DeleteJobCategoryCommand.builder()
+                .id(categoryId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
 
 
     private boolean hasAdminRole(Jwt jwt) {
