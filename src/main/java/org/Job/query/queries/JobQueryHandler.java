@@ -11,6 +11,8 @@ import org.Job.query.model.response.JobCategoryResponse;
 import org.Job.query.model.response.JobListResponse;
 import org.Job.query.model.response.JobPageResponse;
 import org.Job.query.model.response.JobResponse;
+import org.Job.query.model.response.JobSkillResponse;
+import org.Job.query.model.response.JobSkillListResponse;
 import org.axonframework.queryhandling.QueryHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -573,5 +575,26 @@ public class JobQueryHandler {
                         .build())
                 .collect(Collectors.toList());
         return new JobCategoryListResponse(list);
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobSkillListResponse handle(GetJobSkillsQuery query) {
+        Job job = jobRepository.findById(query.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        List<JobSkillResponse> skills = jobSkillRepository.findAllByJobId(job.getId())
+                .stream()
+                .map(s -> JobSkillResponse.builder()
+                        .id(s.getId())
+                        .skillName(s.getSkillName())
+                        .required(s.getRequired())
+                        .build())
+                .collect(Collectors.toList());
+
+        return new JobSkillListResponse(skills);
     }
 }

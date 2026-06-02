@@ -11,6 +11,9 @@ import org.Job.query.queries.GetJobDetailQuery;
 import org.Job.query.queries.GetJobsQuery;
 import org.Job.query.queries.GetSimilarJobsQuery;
 import org.Job.query.queries.GetLatestJobsQuery;
+import org.Job.query.queries.GetJobSkillsQuery;
+import org.Job.query.model.response.JobSkillResponse;
+import org.Job.query.model.response.JobSkillListResponse;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,5 +79,13 @@ public class JobQueryController {
                 new GetLatestJobsQuery(size),
                 ResponseTypes.instanceOf(JobListResponse.class)
         ).thenApply(JobListResponse::getJobs);
+    }
+
+    @GetMapping("/{jobId}/skills")
+    public CompletableFuture<List<JobSkillResponse>> getJobSkills(@PathVariable String jobId) {
+        return queryGateway.query(
+                new GetJobSkillsQuery(jobId),
+                ResponseTypes.instanceOf(JobSkillListResponse.class)
+        ).thenApply(JobSkillListResponse::getSkills);
     }
 }
