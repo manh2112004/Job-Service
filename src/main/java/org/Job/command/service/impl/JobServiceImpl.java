@@ -7,10 +7,16 @@ import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
+import org.Job.command.command.UpdateJobSkillsCommand;
+import org.Job.command.command.UpdateSingleJobSkillCommand;
 import org.Job.command.data.Job;
 import org.Job.command.data.JobRepository;
+import org.Job.command.data.JobSkill;
+import org.Job.command.data.JobSkillRepository;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
+import org.Job.command.model.request.UpdateJobSkillsRequest;
+import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.service.JobService;
 import org.Job.constant.JobStatus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -35,6 +41,9 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     private JobRepository jobRepository;
+
+    @Autowired
+    private JobSkillRepository jobSkillRepository;
 
 
     @Override
@@ -248,6 +257,80 @@ public class JobServiceImpl implements JobService {
 
         CloseJobCommand command = CloseJobCommand.builder()
                 .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateJobSkills(String userId, String jobId, UpdateJobSkillsRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        UpdateJobSkillsCommand command = UpdateJobSkillsCommand.builder()
+                .jobId(jobId)
+                .skills(request.getSkills() == null ? Collections.emptyList() : request.getSkills().stream()
+                        .map(s -> CreateJobCommand.JobSkillCommandInfo.builder()
+                                .skillName(s.getSkillName().trim())
+                                .required(s.getRequired())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateSingleJobSkill(String userId, String skillId, UpdateJobSkillRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        JobSkill skill = jobSkillRepository.findById(skillId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy kỹ năng"));
+
+        Job job = jobRepository.findById(skill.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng");
+        }
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        UpdateSingleJobSkillCommand command = UpdateSingleJobSkillCommand.builder()
+                .jobId(job.getId())
+                .skillId(skillId)
+                .skillName(request.getSkillName().trim())
+                .required(request.getRequired())
                 .build();
 
         return commandGateway.send(command);

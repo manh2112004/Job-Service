@@ -201,5 +201,49 @@ public class JobEventHandler {
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(JobSkillsUpdatedEvent event) {
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+
+        // Update skills: delete all existing and save new ones
+        if (event.getSkills() != null) {
+            jobSkillRepository.deleteAllByJobId(event.getJobId());
+            for (JobCreatedEvent.JobSkillEventInfo skillInfo : event.getSkills()) {
+                JobSkill skill = JobSkill.builder()
+                        .id(UUID.randomUUID().toString())
+                        .jobId(event.getJobId())
+                        .skillName(skillInfo.getSkillName().trim())
+                        .required(skillInfo.getRequired() != null ? skillInfo.getRequired() : false)
+                        .build();
+                jobSkillRepository.save(skill);
+            }
+        }
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(SingleJobSkillUpdatedEvent event) {
+        JobSkill skill = jobSkillRepository.findById(event.getSkillId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy kỹ năng"));
+
+        if (event.getSkillName() != null) {
+            skill.setSkillName(event.getSkillName().trim());
+        }
+        if (event.getRequired() != null) {
+            skill.setRequired(event.getRequired());
+        }
+        jobSkillRepository.save(skill);
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
 }
 

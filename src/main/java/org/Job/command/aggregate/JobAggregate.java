@@ -5,7 +5,11 @@ import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
+import org.Job.command.command.UpdateJobSkillsCommand;
+import org.Job.command.command.UpdateSingleJobSkillCommand;
 import org.Job.command.event.JobCreatedEvent;
+import org.Job.command.event.JobSkillsUpdatedEvent;
+import org.Job.command.event.SingleJobSkillUpdatedEvent;
 import org.Job.command.event.JobUpdatedEvent;
 import org.Job.command.event.JobPublishedEvent;
 import org.Job.command.event.JobDeletedEvent;
@@ -155,6 +159,41 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobClosedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(UpdateJobSkillsCommand command) {
+        AggregateLifecycle.apply(JobSkillsUpdatedEvent.builder()
+                .jobId(command.getJobId())
+                .skills(command.getSkills() == null ? null : command.getSkills().stream()
+                        .map(s -> JobCreatedEvent.JobSkillEventInfo.builder()
+                                .skillName(s.getSkillName())
+                                .required(s.getRequired())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build());
+        return "Cập nhật kỹ năng công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobSkillsUpdatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(UpdateSingleJobSkillCommand command) {
+        AggregateLifecycle.apply(SingleJobSkillUpdatedEvent.builder()
+                .jobId(command.getJobId())
+                .skillId(command.getSkillId())
+                .skillName(command.getSkillName())
+                .required(command.getRequired())
+                .build());
+        return "Cập nhật kỹ năng công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(SingleJobSkillUpdatedEvent event) {
         this.jobId = event.getJobId();
     }
 }

@@ -3,6 +3,8 @@ package org.Job.command.controller;
 import jakarta.validation.Valid;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
+import org.Job.command.model.request.UpdateJobSkillsRequest;
+import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,6 +59,24 @@ public class JobCommandController {
             @PathVariable String jobId
     ) {
         return jobService.closeJob(jwt.getSubject(), jobId);
+    }
+
+    @PutMapping("/{jobId}/skills")
+    public CompletableFuture<String> updateJobSkills(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId,
+            @Valid @RequestBody UpdateJobSkillsRequest request
+    ) {
+        return jobService.updateJobSkills(jwt.getSubject(), jobId, request);
+    }
+
+    @PutMapping("/skills/{skillId}")
+    public CompletableFuture<String> updateSingleJobSkill(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String skillId,
+            @Valid @RequestBody UpdateJobSkillRequest request
+    ) {
+        return jobService.updateSingleJobSkill(jwt.getSubject(), skillId, request);
     }
 }
 
