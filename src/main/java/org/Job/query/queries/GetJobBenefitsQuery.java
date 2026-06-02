@@ -1,4 +1,4 @@
-package org.Job.command.model.request;
+package org.Job.query.queries;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateJobSkillRequest {
-    private String skillName;
-    private Boolean required;
+public class GetJobBenefitsQuery {
+    private String jobId;
 }

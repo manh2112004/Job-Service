@@ -262,5 +262,57 @@ public class JobEventHandler {
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(JobBenefitCreatedEvent event) {
+        JobBenefit benefit = JobBenefit.builder()
+                .id(event.getBenefitId())
+                .jobId(event.getJobId())
+                .title(event.getTitle().trim())
+                .description(event.getDescription() != null ? event.getDescription().trim() : null)
+                .icon(event.getIcon() != null ? event.getIcon().trim() : null)
+                .build();
+        jobBenefitRepository.save(benefit);
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(SingleJobBenefitUpdatedEvent event) {
+        JobBenefit benefit = jobBenefitRepository.findById(event.getBenefitId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy phúc lợi"));
+
+        if (event.getTitle() != null) {
+            benefit.setTitle(event.getTitle().trim());
+        }
+        if (event.getDescription() != null) {
+            benefit.setDescription(event.getDescription().trim());
+        }
+        if (event.getIcon() != null) {
+            benefit.setIcon(event.getIcon().trim());
+        }
+        jobBenefitRepository.save(benefit);
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(JobBenefitDeletedEvent event) {
+        jobBenefitRepository.deleteById(event.getBenefitId());
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
 }
 

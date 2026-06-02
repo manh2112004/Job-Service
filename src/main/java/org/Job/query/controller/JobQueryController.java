@@ -12,8 +12,11 @@ import org.Job.query.queries.GetJobsQuery;
 import org.Job.query.queries.GetSimilarJobsQuery;
 import org.Job.query.queries.GetLatestJobsQuery;
 import org.Job.query.queries.GetJobSkillsQuery;
+import org.Job.query.queries.GetJobBenefitsQuery;
 import org.Job.query.model.response.JobSkillResponse;
 import org.Job.query.model.response.JobSkillListResponse;
+import org.Job.query.model.response.JobBenefitResponse;
+import org.Job.query.model.response.JobBenefitListResponse;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +90,13 @@ public class JobQueryController {
                 new GetJobSkillsQuery(jobId),
                 ResponseTypes.instanceOf(JobSkillListResponse.class)
         ).thenApply(JobSkillListResponse::getSkills);
+    }
+
+    @GetMapping("/{jobId}/benefits")
+    public CompletableFuture<List<JobBenefitResponse>> getJobBenefits(@PathVariable String jobId) {
+        return queryGateway.query(
+                new GetJobBenefitsQuery(jobId),
+                ResponseTypes.instanceOf(JobBenefitListResponse.class)
+        ).thenApply(JobBenefitListResponse::getBenefits);
     }
 }

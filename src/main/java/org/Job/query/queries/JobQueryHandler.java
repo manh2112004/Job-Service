@@ -13,6 +13,8 @@ import org.Job.query.model.response.JobPageResponse;
 import org.Job.query.model.response.JobResponse;
 import org.Job.query.model.response.JobSkillResponse;
 import org.Job.query.model.response.JobSkillListResponse;
+import org.Job.query.model.response.JobBenefitResponse;
+import org.Job.query.model.response.JobBenefitListResponse;
 import org.axonframework.queryhandling.QueryHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -596,5 +598,27 @@ public class JobQueryHandler {
                 .collect(Collectors.toList());
 
         return new JobSkillListResponse(skills);
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobBenefitListResponse handle(GetJobBenefitsQuery query) {
+        Job job = jobRepository.findById(query.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        List<JobBenefitResponse> benefits = jobBenefitRepository.findAllByJobId(job.getId())
+                .stream()
+                .map(b -> JobBenefitResponse.builder()
+                        .id(b.getId())
+                        .title(b.getTitle())
+                        .description(b.getDescription())
+                        .icon(b.getIcon())
+                        .build())
+                .collect(Collectors.toList());
+
+        return new JobBenefitListResponse(benefits);
     }
 }

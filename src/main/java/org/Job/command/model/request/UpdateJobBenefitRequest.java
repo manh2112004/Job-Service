@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateJobSkillRequest {
-    private String skillName;
-    private Boolean required;
+public class UpdateJobBenefitRequest {
+    private String title;
+
+    private String description;
+    private String icon;
 }

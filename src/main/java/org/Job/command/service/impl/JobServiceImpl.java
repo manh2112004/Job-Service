@@ -10,15 +10,22 @@ import org.Job.command.command.CloseJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
+import org.Job.command.command.CreateJobBenefitCommand;
+import org.Job.command.command.UpdateSingleJobBenefitCommand;
+import org.Job.command.command.DeleteJobBenefitCommand;
 import org.Job.command.data.Job;
 import org.Job.command.data.JobRepository;
 import org.Job.command.data.JobSkill;
 import org.Job.command.data.JobSkillRepository;
+import org.Job.command.data.JobBenefit;
+import org.Job.command.data.JobBenefitRepository;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
 import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.model.request.CreateJobSkillRequest;
+import org.Job.command.model.request.CreateJobBenefitRequest;
+import org.Job.command.model.request.UpdateJobBenefitRequest;
 import org.Job.command.service.JobService;
 import org.Job.constant.JobStatus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -46,6 +53,9 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     private JobSkillRepository jobSkillRepository;
+
+    @Autowired
+    private JobBenefitRepository jobBenefitRepository;
 
 
     @Override
@@ -328,10 +338,14 @@ public class JobServiceImpl implements JobService {
             }
         }
 
+        if (request.getSkillName() == null && request.getRequired() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phải cung cấp ít nhất một trường cần cập nhật");
+        }
+
         UpdateSingleJobSkillCommand command = UpdateSingleJobSkillCommand.builder()
                 .jobId(job.getId())
                 .skillId(skillId)
-                .skillName(request.getSkillName().trim())
+                .skillName(request.getSkillName() != null ? request.getSkillName().trim() : null)
                 .required(request.getRequired())
                 .build();
 
@@ -369,6 +383,120 @@ public class JobServiceImpl implements JobService {
                 .skillId(skillId)
                 .skillName(request.getSkillName().trim())
                 .required(request.getRequired())
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> addJobBenefit(String userId, String jobId, CreateJobBenefitRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        // Validate permissions
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        String benefitId = UUID.randomUUID().toString();
+
+        CreateJobBenefitCommand command = CreateJobBenefitCommand.builder()
+                .jobId(jobId)
+                .benefitId(benefitId)
+                .title(request.getTitle().trim())
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .icon(request.getIcon() != null ? request.getIcon().trim() : null)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateSingleJobBenefit(String userId, String benefitId, UpdateJobBenefitRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        JobBenefit benefit = jobBenefitRepository.findById(benefitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phúc lợi"));
+
+        Job job = jobRepository.findById(benefit.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng");
+        }
+
+        // Validate permissions
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        if (request.getTitle() == null && request.getDescription() == null && request.getIcon() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phải cung cấp ít nhất một trường cần cập nhật");
+        }
+
+        UpdateSingleJobBenefitCommand command = UpdateSingleJobBenefitCommand.builder()
+                .jobId(job.getId())
+                .benefitId(benefitId)
+                .title(request.getTitle() != null ? request.getTitle().trim() : null)
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .icon(request.getIcon() != null ? request.getIcon().trim() : null)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteJobBenefit(String userId, String benefitId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        JobBenefit benefit = jobBenefitRepository.findById(benefitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phúc lợi"));
+
+        Job job = jobRepository.findById(benefit.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng");
+        }
+
+        // Validate permissions
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        DeleteJobBenefitCommand command = DeleteJobBenefitCommand.builder()
+                .jobId(job.getId())
+                .benefitId(benefitId)
                 .build();
 
         return commandGateway.send(command);

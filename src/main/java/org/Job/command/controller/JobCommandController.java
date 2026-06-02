@@ -6,6 +6,8 @@ import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
 import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.model.request.CreateJobSkillRequest;
+import org.Job.command.model.request.CreateJobBenefitRequest;
+import org.Job.command.model.request.UpdateJobBenefitRequest;
 import org.Job.command.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -87,6 +89,32 @@ public class JobCommandController {
             @Valid @RequestBody CreateJobSkillRequest request
     ) {
         return jobService.addJobSkill(jwt.getSubject(), jobId, request);
+    }
+
+    @PostMapping("/{jobId}/benefits")
+    public CompletableFuture<String> addJobBenefit(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId,
+            @Valid @RequestBody CreateJobBenefitRequest request
+    ) {
+        return jobService.addJobBenefit(jwt.getSubject(), jobId, request);
+    }
+
+    @PutMapping("/benefits/{benefitId}")
+    public CompletableFuture<String> updateSingleJobBenefit(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String benefitId,
+            @Valid @RequestBody UpdateJobBenefitRequest request
+    ) {
+        return jobService.updateSingleJobBenefit(jwt.getSubject(), benefitId, request);
+    }
+
+    @DeleteMapping("/benefits/{benefitId}")
+    public CompletableFuture<String> deleteJobBenefit(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String benefitId
+    ) {
+        return jobService.deleteJobBenefit(jwt.getSubject(), benefitId);
     }
 }
 

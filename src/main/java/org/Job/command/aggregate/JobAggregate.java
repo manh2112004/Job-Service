@@ -8,10 +8,16 @@ import org.Job.command.command.CloseJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
+import org.Job.command.command.CreateJobBenefitCommand;
+import org.Job.command.command.UpdateSingleJobBenefitCommand;
+import org.Job.command.command.DeleteJobBenefitCommand;
 import org.Job.command.event.JobCreatedEvent;
 import org.Job.command.event.JobSkillCreatedEvent;
 import org.Job.command.event.JobSkillsUpdatedEvent;
 import org.Job.command.event.SingleJobSkillUpdatedEvent;
+import org.Job.command.event.JobBenefitCreatedEvent;
+import org.Job.command.event.SingleJobBenefitUpdatedEvent;
+import org.Job.command.event.JobBenefitDeletedEvent;
 import org.Job.command.event.JobUpdatedEvent;
 import org.Job.command.event.JobPublishedEvent;
 import org.Job.command.event.JobDeletedEvent;
@@ -212,6 +218,54 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobSkillCreatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(CreateJobBenefitCommand command) {
+        AggregateLifecycle.apply(JobBenefitCreatedEvent.builder()
+                .jobId(command.getJobId())
+                .benefitId(command.getBenefitId())
+                .title(command.getTitle())
+                .description(command.getDescription())
+                .icon(command.getIcon())
+                .build());
+        return command.getBenefitId();
+    }
+
+    @EventSourcingHandler
+    public void on(JobBenefitCreatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(UpdateSingleJobBenefitCommand command) {
+        AggregateLifecycle.apply(SingleJobBenefitUpdatedEvent.builder()
+                .jobId(command.getJobId())
+                .benefitId(command.getBenefitId())
+                .title(command.getTitle())
+                .description(command.getDescription())
+                .icon(command.getIcon())
+                .build());
+        return "Cập nhật phúc lợi thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(SingleJobBenefitUpdatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(DeleteJobBenefitCommand command) {
+        AggregateLifecycle.apply(JobBenefitDeletedEvent.builder()
+                .jobId(command.getJobId())
+                .benefitId(command.getBenefitId())
+                .build());
+        return "Xóa phúc lợi thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobBenefitDeletedEvent event) {
         this.jobId = event.getJobId();
     }
 }
