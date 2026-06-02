@@ -50,6 +50,9 @@ public class JobQueryHandler {
     public JobDetailResponse handle(GetJobDetailQuery query) {
         Job job = jobRepository.findById(query.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
 
         CompanyResponse company = companyClient.getCompany(job.getCompanyId());
 

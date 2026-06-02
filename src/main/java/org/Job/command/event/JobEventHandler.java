@@ -184,10 +184,11 @@ public class JobEventHandler {
     @EventHandler
     @Transactional
     public void on(JobDeletedEvent event) {
-        jobSkillRepository.deleteAllByJobId(event.getJobId());
-        jobBenefitRepository.deleteAllByJobId(event.getJobId());
-        jobCategoryMappingRepository.deleteAllByJobId(event.getJobId());
-        jobRepository.deleteById(event.getJobId());
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setStatus(JobStatus.DELETED);
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
     }
 
     @EventHandler

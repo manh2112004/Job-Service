@@ -12,6 +12,7 @@ import org.Job.command.data.JobRepository;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.service.JobService;
+import org.Job.constant.JobStatus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -103,6 +104,9 @@ public class JobServiceImpl implements JobService {
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
 
         // Validate permissions: must be recruiter who created the job OR authorized company member
         if (!job.getRecruiterId().equals(userId)) {
@@ -164,6 +168,9 @@ public class JobServiceImpl implements JobService {
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
 
         // Validate permissions: must be recruiter who created the job OR authorized company member
         if (!job.getRecruiterId().equals(userId)) {
@@ -192,6 +199,9 @@ public class JobServiceImpl implements JobService {
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
 
         // Validate permissions: must be recruiter who created the job OR authorized company member
         if (!job.getRecruiterId().equals(userId)) {
@@ -220,6 +230,9 @@ public class JobServiceImpl implements JobService {
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
 
         // Validate permissions: must be recruiter who created the job OR authorized company member
         if (!job.getRecruiterId().equals(userId)) {

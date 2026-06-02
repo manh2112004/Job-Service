@@ -6,5 +6,6 @@ public enum JobStatus {
     OPEN,
     CLOSED,
     REJECTED,
-    EXPIRED
+    EXPIRED,
+    DELETED
 }

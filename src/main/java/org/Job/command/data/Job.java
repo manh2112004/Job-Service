@@ -65,6 +65,7 @@ public class Job {
     private LocalDate deadline;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private JobStatus status;
 
     private Boolean featured;
