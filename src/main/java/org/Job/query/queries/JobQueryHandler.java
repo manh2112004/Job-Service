@@ -621,4 +621,92 @@ public class JobQueryHandler {
 
         return new JobBenefitListResponse(benefits);
     }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobPageResponse handle(GetPendingJobsQuery query) {
+        if (query.getPage() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page phải >= 0");
+        }
+        if (query.getSize() <= 0 || query.getSize() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size phải trong khoảng 1..100");
+        }
+
+        Pageable pageable = PageRequest.of(
+                query.getPage(),
+                query.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Specification<Job> spec = Specification.where((root, cq, cb) ->
+                cb.equal(root.get("status"), JobStatus.PENDING)
+        );
+
+        Page<Job> jobPage = jobRepository.findAll(spec, pageable);
+
+        java.util.Map<String, CompanyResponse> companyCache = new java.util.HashMap<>();
+
+        List<JobResponse> dtoList = jobPage.getContent().stream()
+                .map(job -> {
+                    CompanyResponse company = companyCache.computeIfAbsent(job.getCompanyId(),
+                            cid -> companyClient.getCompany(cid));
+
+                    JobResponse.CompanyDto companyDto = null;
+                    if (company != null) {
+                        companyDto = JobResponse.CompanyDto.builder()
+                                .id(company.getId())
+                                .companyName(company.getCompanyName())
+                                .logoUrl(company.getLogoUrl())
+                                .build();
+                    } else {
+                        companyDto = JobResponse.CompanyDto.builder()
+                                .id(job.getCompanyId())
+                                .companyName("N/A")
+                                .logoUrl(null)
+                                .build();
+                    }
+
+                    List<String> skills = jobSkillRepository.findAllByJobId(job.getId())
+                            .stream()
+                            .map(JobSkill::getSkillName)
+                            .collect(Collectors.toList());
+
+                    List<String> categories = jobCategoryMappingRepository.findAllByJobId(job.getId())
+                            .stream()
+                            .map(m -> jobCategoryRepository.findById(m.getCategoryId()).orElse(null))
+                            .filter(c -> c != null)
+                            .map(JobCategory::getName)
+                            .collect(Collectors.toList());
+
+                    return JobResponse.builder()
+                            .id(job.getId())
+                            .title(job.getTitle())
+                            .company(companyDto)
+                            .location(job.getLocation())
+                            .workingType(job.getWorkingType() != null ? job.getWorkingType().name() : null)
+                            .employmentType(job.getEmploymentType() != null ? job.getEmploymentType().name() : null)
+                            .level(job.getLevel() != null ? job.getLevel().name() : null)
+                            .salary(JobResponse.SalaryDto.builder()
+                                    .minSalary(job.getMinSalary())
+                                    .maxSalary(job.getMaxSalary())
+                                    .currency(job.getCurrency())
+                                    .build())
+                            .deadline(job.getDeadline())
+                            .postedAt(job.getPublishedAt())
+                            .urgent(job.getUrgent())
+                            .featured(job.getFeatured())
+                            .skills(skills)
+                            .categories(categories)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return new JobPageResponse(
+                dtoList,
+                jobPage.getNumber(),
+                jobPage.getSize(),
+                jobPage.getTotalElements(),
+                jobPage.getTotalPages()
+        );
+    }
 }
