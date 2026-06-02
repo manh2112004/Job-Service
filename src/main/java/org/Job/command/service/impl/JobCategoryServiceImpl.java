@@ -1,8 +1,10 @@
 package org.Job.command.service.impl;
 
 import org.Job.command.command.CreateJobCategoryCommand;
+import org.Job.command.command.UpdateJobCategoryCommand;
 import org.Job.command.data.JobCategoryRepository;
 import org.Job.command.model.request.CreateJobCategoryRequest;
+import org.Job.command.model.request.UpdateJobCategoryRequest;
 import org.Job.command.service.JobCategoryService;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,44 @@ public class JobCategoryServiceImpl implements JobCategoryService {
 
         return commandGateway.send(command);
     }
+
+    @Override
+    public CompletableFuture<String> updateJobCategory(Jwt jwt, String categoryId, UpdateJobCategoryRequest request) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền quản lý danh mục");
+        }
+
+        if (!jobCategoryRepository.existsById(categoryId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục công việc");
+        }
+
+        String name = request.getName() != null ? request.getName().trim() : null;
+        String slug = null;
+        if (name != null) {
+            if (name.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên danh mục không được để trống");
+            }
+            if (jobCategoryRepository.existsByNameAndIdNot(name, categoryId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên danh mục đã tồn tại");
+            }
+            slug = toSlug(name);
+        }
+
+        UpdateJobCategoryCommand command = UpdateJobCategoryCommand.builder()
+                .id(categoryId)
+                .name(name)
+                .slug(slug)
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .active(request.getActive())
+                .build();
+
+        return commandGateway.send(command);
+    }
+
 
     private boolean hasAdminRole(Jwt jwt) {
         if (hasRoleInRealmAccess(jwt, "SYSTEM_ADMIN", "ROLE_SYSTEM_ADMIN", "ADMIN", "ROLE_ADMIN")) {
