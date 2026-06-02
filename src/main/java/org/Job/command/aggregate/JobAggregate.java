@@ -6,6 +6,7 @@ import org.Job.command.command.PublishJobCommand;
 import org.Job.command.command.ApproveJobCommand;
 import org.Job.command.command.RejectJobCommand;
 import org.Job.command.command.BlockJobCommand;
+import org.Job.command.command.UnblockJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
@@ -26,6 +27,7 @@ import org.Job.command.event.JobPublishedEvent;
 import org.Job.command.event.JobApprovedEvent;
 import org.Job.command.event.JobRejectedEvent;
 import org.Job.command.event.JobBlockedEvent;
+import org.Job.command.event.JobUnblockedEvent;
 import org.Job.command.event.JobDeletedEvent;
 import org.Job.command.event.JobClosedEvent;
 import org.axonframework.commandhandling.CommandHandler;
@@ -189,6 +191,20 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobBlockedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(UnblockJobCommand command) {
+        AggregateLifecycle.apply(JobUnblockedEvent.builder()
+                .jobId(command.getJobId())
+                .unblockedAt(java.time.LocalDateTime.now())
+                .build());
+        return "Mở khóa công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobUnblockedEvent event) {
         this.jobId = event.getJobId();
     }
 

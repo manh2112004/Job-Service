@@ -217,6 +217,17 @@ public class JobEventHandler {
 
     @EventHandler
     @Transactional
+    public void on(JobUnblockedEvent event) {
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        job.setStatus(JobStatus.OPEN);
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
+
+    @EventHandler
+    @Transactional
     public void on(JobDeletedEvent event) {
         Job job = jobRepository.findById(event.getJobId())
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
