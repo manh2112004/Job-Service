@@ -13,12 +13,14 @@ import org.Job.command.command.ReopenJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
+import org.Job.command.command.DeleteJobSkillCommand;
 import org.Job.command.command.CreateJobBenefitCommand;
 import org.Job.command.command.UpdateSingleJobBenefitCommand;
 import org.Job.command.command.DeleteJobBenefitCommand;
 import org.Job.command.command.CreateJobReportCommand;
 import org.Job.command.event.JobCreatedEvent;
 import org.Job.command.event.JobSkillCreatedEvent;
+import org.Job.command.event.JobSkillDeletedEvent;
 import org.Job.command.event.JobSkillsUpdatedEvent;
 import org.Job.command.event.SingleJobSkillUpdatedEvent;
 import org.Job.command.event.JobBenefitCreatedEvent;
@@ -300,6 +302,20 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobSkillCreatedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(DeleteJobSkillCommand command) {
+        AggregateLifecycle.apply(JobSkillDeletedEvent.builder()
+                .jobId(command.getJobId())
+                .skillId(command.getSkillId())
+                .build());
+        return "Xóa kỹ năng thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobSkillDeletedEvent event) {
         this.jobId = event.getJobId();
     }
 

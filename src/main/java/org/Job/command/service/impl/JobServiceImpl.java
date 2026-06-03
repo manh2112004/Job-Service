@@ -11,6 +11,7 @@ import org.Job.command.command.ReopenJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
+import org.Job.command.command.DeleteJobSkillCommand;
 import org.Job.command.command.CreateJobBenefitCommand;
 import org.Job.command.command.UpdateSingleJobBenefitCommand;
 import org.Job.command.command.DeleteJobBenefitCommand;
@@ -391,6 +392,41 @@ public class JobServiceImpl implements JobService {
                 .skillId(skillId)
                 .skillName(request.getSkillName() != null ? request.getSkillName().trim() : null)
                 .required(request.getRequired())
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteJobSkill(String userId, String skillId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        JobSkill skill = jobSkillRepository.findById(skillId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy kỹ năng"));
+
+        Job job = jobRepository.findById(skill.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc tương ứng");
+        }
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa thông tin công việc này");
+            }
+        }
+
+        DeleteJobSkillCommand command = DeleteJobSkillCommand.builder()
+                .jobId(job.getId())
+                .skillId(skillId)
                 .build();
 
         return commandGateway.send(command);

@@ -91,6 +91,14 @@ public class JobCommandController {
         return jobService.updateSingleJobSkill(jwt.getSubject(), skillId, request);
     }
 
+    @DeleteMapping("/skills/{skillId}")
+    public CompletableFuture<String> deleteJobSkill(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String skillId
+    ) {
+        return jobService.deleteJobSkill(jwt.getSubject(), skillId);
+    }
+
     @PostMapping("/{jobId}/skills")
     public CompletableFuture<String> addJobSkill(
             @AuthenticationPrincipal Jwt jwt,

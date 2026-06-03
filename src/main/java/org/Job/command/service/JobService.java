@@ -28,6 +28,8 @@ public interface JobService {
 
     CompletableFuture<String> updateSingleJobSkill(String userId, String skillId, UpdateJobSkillRequest request);
 
+    CompletableFuture<String> deleteJobSkill(String userId, String skillId);
+
     CompletableFuture<String> addJobSkill(String userId, String jobId, CreateJobSkillRequest request);
 
     CompletableFuture<String> addJobBenefit(String userId, String jobId, CreateJobBenefitRequest request);

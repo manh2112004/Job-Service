@@ -3,6 +3,7 @@ package org.Job.command.event;
 import org.Job.command.data.*;
 import org.Job.command.event.JobReportCreatedEvent;
 import org.Job.command.event.JobReopenedEvent;
+import org.Job.command.event.JobSkillDeletedEvent;
 import org.Job.constant.JobStatus;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -317,6 +318,17 @@ public class JobEventHandler {
                 .required(event.getRequired() != null ? event.getRequired() : false)
                 .build();
         jobSkillRepository.save(skill);
+
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(JobSkillDeletedEvent event) {
+        jobSkillRepository.deleteById(event.getSkillId());
 
         Job job = jobRepository.findById(event.getJobId())
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
