@@ -8,6 +8,7 @@ import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.model.request.CreateJobSkillRequest;
 import org.Job.command.model.request.CreateJobBenefitRequest;
 import org.Job.command.model.request.UpdateJobBenefitRequest;
+import org.Job.command.model.request.CreateJobReportRequest;
 import org.Job.command.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -115,6 +116,15 @@ public class JobCommandController {
             @PathVariable String benefitId
     ) {
         return jobService.deleteJobBenefit(jwt.getSubject(), benefitId);
+    }
+
+    @PostMapping("/{jobId}/reports")
+    public CompletableFuture<String> createJobReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId,
+            @Valid @RequestBody CreateJobReportRequest request
+    ) {
+        return jobService.createJobReport(jwt.getSubject(), jobId, request);
     }
 }
 

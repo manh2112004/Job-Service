@@ -13,12 +13,15 @@ import org.Job.command.command.UpdateSingleJobSkillCommand;
 import org.Job.command.command.CreateJobBenefitCommand;
 import org.Job.command.command.UpdateSingleJobBenefitCommand;
 import org.Job.command.command.DeleteJobBenefitCommand;
+import org.Job.command.command.CreateJobReportCommand;
 import org.Job.command.data.Job;
 import org.Job.command.data.JobRepository;
 import org.Job.command.data.JobSkill;
 import org.Job.command.data.JobSkillRepository;
 import org.Job.command.data.JobBenefit;
 import org.Job.command.data.JobBenefitRepository;
+import org.Job.command.data.JobReport;
+import org.Job.command.data.JobReportRepository;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
@@ -26,6 +29,7 @@ import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.model.request.CreateJobSkillRequest;
 import org.Job.command.model.request.CreateJobBenefitRequest;
 import org.Job.command.model.request.UpdateJobBenefitRequest;
+import org.Job.command.model.request.CreateJobReportRequest;
 import org.Job.command.service.JobService;
 import org.Job.constant.JobStatus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -56,6 +60,9 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     private JobBenefitRepository jobBenefitRepository;
+
+    @Autowired
+    private JobReportRepository jobReportRepository;
 
 
     @Override
@@ -497,6 +504,42 @@ public class JobServiceImpl implements JobService {
         DeleteJobBenefitCommand command = DeleteJobBenefitCommand.builder()
                 .jobId(job.getId())
                 .benefitId(benefitId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> createJobReport(String userId, String jobId, CreateJobReportRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        // Recruiter cannot report their own job
+        if (job.getRecruiterId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không thể báo cáo công việc của chính mình");
+        }
+
+        // Prevent duplicate report from same user
+        if (jobReportRepository.existsByJobIdAndReporterId(jobId, userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bạn đã báo cáo công việc này trước đó");
+        }
+
+        String reportId = UUID.randomUUID().toString();
+
+        CreateJobReportCommand command = CreateJobReportCommand.builder()
+                .jobId(jobId)
+                .reportId(reportId)
+                .reporterId(userId)
+                .reason(request.getReason() != null ? request.getReason().trim() : null)
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
                 .build();
 
         return commandGateway.send(command);

@@ -15,6 +15,7 @@ import org.Job.command.command.UpdateSingleJobSkillCommand;
 import org.Job.command.command.CreateJobBenefitCommand;
 import org.Job.command.command.UpdateSingleJobBenefitCommand;
 import org.Job.command.command.DeleteJobBenefitCommand;
+import org.Job.command.command.CreateJobReportCommand;
 import org.Job.command.event.JobCreatedEvent;
 import org.Job.command.event.JobSkillCreatedEvent;
 import org.Job.command.event.JobSkillsUpdatedEvent;
@@ -30,6 +31,8 @@ import org.Job.command.event.JobBlockedEvent;
 import org.Job.command.event.JobUnblockedEvent;
 import org.Job.command.event.JobDeletedEvent;
 import org.Job.command.event.JobClosedEvent;
+import org.Job.command.event.JobReportCreatedEvent;
+import org.Job.constant.ReportStatus;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -330,6 +333,25 @@ public class JobAggregate {
 
     @EventSourcingHandler
     public void on(JobBenefitDeletedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(CreateJobReportCommand command) {
+        AggregateLifecycle.apply(JobReportCreatedEvent.builder()
+                .jobId(command.getJobId())
+                .reportId(command.getReportId())
+                .reporterId(command.getReporterId())
+                .reason(command.getReason())
+                .description(command.getDescription())
+                .status(ReportStatus.PENDING)
+                .createdAt(java.time.LocalDateTime.now())
+                .build());
+        return command.getReportId();
+    }
+
+    @EventSourcingHandler
+    public void on(JobReportCreatedEvent event) {
         this.jobId = event.getJobId();
     }
 }

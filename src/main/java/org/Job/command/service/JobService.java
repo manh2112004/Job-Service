@@ -7,6 +7,7 @@ import org.Job.command.model.request.UpdateJobSkillRequest;
 import org.Job.command.model.request.CreateJobSkillRequest;
 import org.Job.command.model.request.CreateJobBenefitRequest;
 import org.Job.command.model.request.UpdateJobBenefitRequest;
+import org.Job.command.model.request.CreateJobReportRequest;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,6 +33,8 @@ public interface JobService {
     CompletableFuture<String> updateSingleJobBenefit(String userId, String benefitId, UpdateJobBenefitRequest request);
 
     CompletableFuture<String> deleteJobBenefit(String userId, String benefitId);
+
+    CompletableFuture<String> createJobReport(String userId, String jobId, CreateJobReportRequest request);
 }
 
 
