@@ -9,6 +9,7 @@ import org.Job.command.command.BlockJobCommand;
 import org.Job.command.command.UnblockJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
+import org.Job.command.command.ReopenJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
@@ -31,6 +32,7 @@ import org.Job.command.event.JobBlockedEvent;
 import org.Job.command.event.JobUnblockedEvent;
 import org.Job.command.event.JobDeletedEvent;
 import org.Job.command.event.JobClosedEvent;
+import org.Job.command.event.JobReopenedEvent;
 import org.Job.command.event.JobReportCreatedEvent;
 import org.Job.constant.ReportStatus;
 import org.axonframework.commandhandling.CommandHandler;
@@ -227,13 +229,26 @@ public class JobAggregate {
     @CommandHandler
     public String handle(CloseJobCommand command) {
         AggregateLifecycle.apply(JobClosedEvent.builder()
-                .jobId(command.getJobId())
-                .build());
+                 .jobId(command.getJobId())
+                 .build());
         return "Đóng công việc thành công";
     }
 
     @EventSourcingHandler
     public void on(JobClosedEvent event) {
+        this.jobId = event.getJobId();
+    }
+
+    @CommandHandler
+    public String handle(ReopenJobCommand command) {
+        AggregateLifecycle.apply(JobReopenedEvent.builder()
+                .jobId(command.getJobId())
+                .build());
+        return "Mở lại công việc thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(JobReopenedEvent event) {
         this.jobId = event.getJobId();
     }
 

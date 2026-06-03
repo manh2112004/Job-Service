@@ -2,6 +2,7 @@ package org.Job.command.event;
 
 import org.Job.command.data.*;
 import org.Job.command.event.JobReportCreatedEvent;
+import org.Job.command.event.JobReopenedEvent;
 import org.Job.constant.JobStatus;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -247,6 +248,17 @@ public class JobEventHandler {
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
 
         job.setStatus(JobStatus.CLOSED);
+        job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(JobReopenedEvent event) {
+        Job job = jobRepository.findById(event.getJobId())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+
+        job.setStatus(JobStatus.OPEN);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
     }

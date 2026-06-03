@@ -7,6 +7,7 @@ import org.Job.command.command.UpdateJobCommand;
 import org.Job.command.command.PublishJobCommand;
 import org.Job.command.command.DeleteJobCommand;
 import org.Job.command.command.CloseJobCommand;
+import org.Job.command.command.ReopenJobCommand;
 import org.Job.command.command.UpdateJobSkillsCommand;
 import org.Job.command.command.CreateJobSkillCommand;
 import org.Job.command.command.UpdateSingleJobSkillCommand;
@@ -275,6 +276,42 @@ public class JobServiceImpl implements JobService {
         }
 
         CloseJobCommand command = CloseJobCommand.builder()
+                .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> reopenJob(String userId, String jobId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        // Job must be currently CLOSED to be reopened
+        if (job.getStatus() != JobStatus.CLOSED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ có thể mở lại công việc đang ở trạng thái đóng");
+        }
+
+        // Validate permissions: must be recruiter who created the job OR authorized company member
+        if (!job.getRecruiterId().equals(userId)) {
+            CompanyMemberResponse member = companyClient.getCompanyMember(job.getCompanyId(), userId);
+            if (member == null || !Boolean.TRUE.equals(member.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền mở lại công việc này");
+            }
+            String role = member.getRole();
+            if (!"OWNER".equals(role) && !"HR_MANAGER".equals(role) && !"RECRUITER".equals(role)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền mở lại công việc này");
+            }
+        }
+
+        ReopenJobCommand command = ReopenJobCommand.builder()
                 .jobId(jobId)
                 .build();
 

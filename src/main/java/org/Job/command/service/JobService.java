@@ -22,6 +22,8 @@ public interface JobService {
 
     CompletableFuture<String> closeJob(String userId, String jobId);
 
+    CompletableFuture<String> reopenJob(String userId, String jobId);
+
     CompletableFuture<String> updateJobSkills(String userId, String jobId, UpdateJobSkillsRequest request);
 
     CompletableFuture<String> updateSingleJobSkill(String userId, String skillId, UpdateJobSkillRequest request);

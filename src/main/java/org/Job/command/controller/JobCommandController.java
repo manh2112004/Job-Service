@@ -65,6 +65,14 @@ public class JobCommandController {
         return jobService.closeJob(jwt.getSubject(), jobId);
     }
 
+    @PutMapping("/{jobId}/reopen")
+    public CompletableFuture<String> reopenJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.reopenJob(jwt.getSubject(), jobId);
+    }
+
     @PutMapping("/{jobId}/skills")
     public CompletableFuture<String> updateJobSkills(
             @AuthenticationPrincipal Jwt jwt,
