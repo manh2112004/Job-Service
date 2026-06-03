@@ -3,6 +3,10 @@ package org.Job.query.queries;
 import org.Job.client.CompanyClient;
 import org.Job.client.dto.CompanyResponse;
 import org.Job.command.data.*;
+import org.Job.constant.ReportStatus;
+import org.Job.query.model.response.JobReportResponse;
+import org.Job.query.model.response.JobReportPageResponse;
+import org.Job.query.queries.GetJobReportsQuery;
 import org.Job.constant.EmploymentType;
 import org.Job.constant.JobStatus;
 import org.Job.query.model.response.JobDetailResponse;
@@ -47,6 +51,9 @@ public class JobQueryHandler {
 
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
+
+    @Autowired
+    private JobReportRepository jobReportRepository;
 
     @Autowired
     private CompanyClient companyClient;
@@ -707,6 +714,65 @@ public class JobQueryHandler {
                 jobPage.getSize(),
                 jobPage.getTotalElements(),
                 jobPage.getTotalPages()
+        );
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobReportPageResponse handle(GetJobReportsQuery query) {
+        if (query.getPage() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page phải >= 0");
+        }
+        if (query.getSize() <= 0 || query.getSize() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size phải trong khoảng 1..100");
+        }
+
+        Pageable pageable = PageRequest.of(
+                query.getPage(),
+                query.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Specification<JobReport> spec = Specification.where(null);
+
+        if (query.getStatus() != null) {
+            spec = spec.and((root, cq, cb) ->
+                    cb.equal(root.get("status"), query.getStatus())
+            );
+        }
+
+        if (query.getJobId() != null && !query.getJobId().isBlank()) {
+            spec = spec.and((root, cq, cb) ->
+                    cb.equal(root.get("jobId"), query.getJobId().trim())
+            );
+        }
+
+        Page<JobReport> reportPage = jobReportRepository.findAll(spec, pageable);
+
+        List<JobReportResponse> dtoList = reportPage.getContent().stream()
+                .map(report -> {
+                    String jobTitle = jobRepository.findById(report.getJobId())
+                            .map(Job::getTitle)
+                            .orElse(null);
+                    return JobReportResponse.builder()
+                            .id(report.getId())
+                            .jobId(report.getJobId())
+                            .jobTitle(jobTitle)
+                            .reporterId(report.getReporterId())
+                            .reason(report.getReason())
+                            .description(report.getDescription())
+                            .status(report.getStatus())
+                            .createdAt(report.getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return new JobReportPageResponse(
+                dtoList,
+                reportPage.getNumber(),
+                reportPage.getSize(),
+                reportPage.getTotalElements(),
+                reportPage.getTotalPages()
         );
     }
 }

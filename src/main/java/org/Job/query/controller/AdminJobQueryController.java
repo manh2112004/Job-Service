@@ -1,6 +1,9 @@
 package org.Job.query.controller;
 
+import org.Job.constant.ReportStatus;
 import org.Job.query.model.response.JobPageResponse;
+import org.Job.query.model.response.JobReportPageResponse;
+import org.Job.query.queries.GetJobReportsQuery;
 import org.Job.query.queries.GetPendingJobsQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
@@ -42,6 +45,28 @@ public class AdminJobQueryController {
         return queryGateway.query(
                 new GetPendingJobsQuery(page, size),
                 ResponseTypes.instanceOf(JobPageResponse.class)
+        );
+    }
+
+    @GetMapping("/job-reports")
+    public CompletableFuture<JobReportPageResponse> getJobReports(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) ReportStatus status,
+            @RequestParam(required = false) String jobId
+    ) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập thông tin này");
+        }
+
+        return queryGateway.query(
+                new GetJobReportsQuery(page, size, status, jobId),
+                ResponseTypes.instanceOf(JobReportPageResponse.class)
         );
     }
 
