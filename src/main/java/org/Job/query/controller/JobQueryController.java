@@ -11,6 +11,7 @@ import org.Job.query.queries.GetJobDetailQuery;
 import org.Job.query.queries.GetJobsQuery;
 import org.Job.query.queries.GetSimilarJobsQuery;
 import org.Job.query.queries.GetLatestJobsQuery;
+import org.Job.query.queries.GetFeaturedJobsQuery;
 import org.Job.query.queries.GetJobSkillsQuery;
 import org.Job.query.queries.GetJobBenefitsQuery;
 import org.Job.query.model.response.JobSkillResponse;
@@ -83,6 +84,17 @@ public class JobQueryController {
                 ResponseTypes.instanceOf(JobListResponse.class)
         ).thenApply(JobListResponse::getJobs);
     }
+
+    @GetMapping("/featured")
+    public CompletableFuture<List<JobResponse>> getFeaturedJobs(
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return queryGateway.query(
+                new GetFeaturedJobsQuery(size),
+                ResponseTypes.instanceOf(JobListResponse.class)
+        ).thenApply(JobListResponse::getJobs);
+    }
+
 
     @GetMapping("/{jobId}/skills")
     public CompletableFuture<List<JobSkillResponse>> getJobSkills(@PathVariable String jobId) {
