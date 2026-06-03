@@ -142,5 +142,21 @@ public class JobCommandController {
     ) {
         return jobService.createJobReport(jwt.getSubject(), jobId, request);
     }
+
+    @PostMapping("/{jobId}/save")
+    public CompletableFuture<String> saveJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.saveJob(jwt.getSubject(), jobId);
+    }
+
+    @DeleteMapping("/{jobId}/save")
+    public CompletableFuture<String> unsaveJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        return jobService.unsaveJob(jwt.getSubject(), jobId);
+    }
 }
 

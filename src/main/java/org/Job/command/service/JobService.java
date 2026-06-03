@@ -39,6 +39,10 @@ public interface JobService {
     CompletableFuture<String> deleteJobBenefit(String userId, String benefitId);
 
     CompletableFuture<String> createJobReport(String userId, String jobId, CreateJobReportRequest request);
+
+    CompletableFuture<String> saveJob(String candidateId, String jobId);
+
+    CompletableFuture<String> unsaveJob(String candidateId, String jobId);
 }
 
 

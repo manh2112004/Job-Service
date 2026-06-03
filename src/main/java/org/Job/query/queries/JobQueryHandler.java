@@ -56,6 +56,9 @@ public class JobQueryHandler {
     private JobReportRepository jobReportRepository;
 
     @Autowired
+    private SavedJobRepository savedJobRepository;
+
+    @Autowired
     private CompanyClient companyClient;
 
     @QueryHandler
@@ -871,6 +874,120 @@ public class JobQueryHandler {
                 reportPage.getSize(),
                 reportPage.getTotalElements(),
                 reportPage.getTotalPages()
+        );
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public JobPageResponse handle(GetSavedJobsQuery query) {
+        if (query.getPage() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page phải >= 0");
+        }
+        if (query.getSize() <= 0 || query.getSize() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size phải trong khoảng 1..100");
+        }
+
+        Pageable pageable = PageRequest.of(
+                query.getPage(),
+                query.getSize(),
+                Sort.by(Sort.Direction.DESC, "savedAt")
+        );
+
+        Page<SavedJob> savedJobPage = savedJobRepository.findAllByCandidateId(query.getCandidateId(), pageable);
+        List<SavedJob> savedJobs = savedJobPage.getContent();
+
+        if (savedJobs.isEmpty()) {
+            return new JobPageResponse(
+                    List.of(),
+                    savedJobPage.getNumber(),
+                    savedJobPage.getSize(),
+                    savedJobPage.getTotalElements(),
+                    savedJobPage.getTotalPages()
+            );
+        }
+
+        List<String> jobIds = savedJobs.stream().map(SavedJob::getJobId).collect(Collectors.toList());
+
+        List<Job> jobs = jobRepository.findAllById(jobIds);
+        java.util.Map<String, Job> jobMap = jobs.stream()
+                .collect(Collectors.toMap(Job::getId, j -> j));
+
+        List<Job> orderedJobs = savedJobs.stream()
+                .map(sj -> jobMap.get(sj.getJobId()))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<JobCategoryMapping> allMappings = jobCategoryMappingRepository.findAllByJobIdIn(jobIds);
+        java.util.Map<String, List<JobCategoryMapping>> jobToMappingsMap = allMappings.stream()
+                .collect(Collectors.groupingBy(JobCategoryMapping::getJobId));
+
+        List<JobSkill> allSkills = jobSkillRepository.findAllByJobIdIn(jobIds);
+        java.util.Map<String, List<String>> jobToSkillsMap = allSkills.stream()
+                .collect(Collectors.groupingBy(
+                        JobSkill::getJobId,
+                        Collectors.mapping(JobSkill::getSkillName, Collectors.toList())
+                ));
+
+        java.util.Map<String, CompanyResponse> companyCache = new java.util.HashMap<>();
+
+        List<JobResponse> dtoList = orderedJobs.stream()
+                .map(job -> {
+                    CompanyResponse company = companyCache.computeIfAbsent(job.getCompanyId(),
+                            cid -> companyClient.getCompany(cid));
+
+                    JobResponse.CompanyDto companyDto = null;
+                    if (company != null) {
+                        companyDto = JobResponse.CompanyDto.builder()
+                                .id(company.getId())
+                                .companyName(company.getCompanyName())
+                                .logoUrl(company.getLogoUrl())
+                                .build();
+                    } else {
+                        companyDto = JobResponse.CompanyDto.builder()
+                                .id(job.getCompanyId())
+                                .companyName("N/A")
+                                .logoUrl(null)
+                                .build();
+                    }
+
+                    List<String> skills = jobToSkillsMap.getOrDefault(job.getId(), List.of());
+
+                    List<String> categories = jobToMappingsMap.getOrDefault(job.getId(), List.of())
+                            .stream()
+                            .map(m -> jobCategoryRepository.findById(m.getCategoryId()).orElse(null))
+                            .filter(c -> c != null)
+                            .map(JobCategory::getName)
+                            .collect(Collectors.toList());
+
+                    return JobResponse.builder()
+                            .id(job.getId())
+                            .title(job.getTitle())
+                            .company(companyDto)
+                            .location(job.getLocation())
+                            .workingType(job.getWorkingType() != null ? job.getWorkingType().name() : null)
+                            .employmentType(job.getEmploymentType() != null ? job.getEmploymentType().name() : null)
+                            .level(job.getLevel() != null ? job.getLevel().name() : null)
+                            .salary(JobResponse.SalaryDto.builder()
+                                    .minSalary(job.getMinSalary())
+                                    .maxSalary(job.getMaxSalary())
+                                    .currency(job.getCurrency())
+                                    .build())
+                            .deadline(job.getDeadline())
+                            .postedAt(job.getPublishedAt())
+                            .urgent(job.getUrgent())
+                            .featured(job.getFeatured())
+                            .skills(skills)
+                            .categories(categories)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return new JobPageResponse(
+                dtoList,
+                savedJobPage.getNumber(),
+                savedJobPage.getSize(),
+                savedJobPage.getTotalElements(),
+                savedJobPage.getTotalPages()
         );
     }
 }

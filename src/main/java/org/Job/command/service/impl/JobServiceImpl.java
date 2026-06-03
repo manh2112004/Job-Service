@@ -16,14 +16,9 @@ import org.Job.command.command.CreateJobBenefitCommand;
 import org.Job.command.command.UpdateSingleJobBenefitCommand;
 import org.Job.command.command.DeleteJobBenefitCommand;
 import org.Job.command.command.CreateJobReportCommand;
-import org.Job.command.data.Job;
-import org.Job.command.data.JobRepository;
-import org.Job.command.data.JobSkill;
-import org.Job.command.data.JobSkillRepository;
-import org.Job.command.data.JobBenefit;
-import org.Job.command.data.JobBenefitRepository;
-import org.Job.command.data.JobReport;
-import org.Job.command.data.JobReportRepository;
+import org.Job.command.command.SaveJobCommand;
+import org.Job.command.command.UnsaveJobCommand;
+import org.Job.command.data.*;
 import org.Job.command.model.request.CreateJobRequest;
 import org.Job.command.model.request.UpdateJobRequest;
 import org.Job.command.model.request.UpdateJobSkillsRequest;
@@ -65,6 +60,9 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     private JobReportRepository jobReportRepository;
+
+    @Autowired
+    private SavedJobRepository savedJobRepository;
 
 
     @Override
@@ -613,6 +611,52 @@ public class JobServiceImpl implements JobService {
                 .reporterId(userId)
                 .reason(request.getReason() != null ? request.getReason().trim() : null)
                 .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> saveJob(String candidateId, String jobId) {
+        if (candidateId == null || candidateId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc"));
+        if (job.getStatus() == JobStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công việc");
+        }
+
+        java.util.Optional<SavedJob> existing = savedJobRepository.findByCandidateIdAndJobId(candidateId, jobId);
+        if (existing.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bạn đã lưu công việc này trước đó");
+        }
+
+        String savedJobId = UUID.randomUUID().toString();
+
+        SaveJobCommand command = SaveJobCommand.builder()
+                .id(savedJobId)
+                .candidateId(candidateId)
+                .jobId(jobId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> unsaveJob(String candidateId, String jobId) {
+        if (candidateId == null || candidateId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        SavedJob savedJob = savedJobRepository.findByCandidateIdAndJobId(candidateId, jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bạn chưa lưu công việc này"));
+
+        UnsaveJobCommand command = UnsaveJobCommand.builder()
+                .id(savedJob.getId())
+                .candidateId(candidateId)
+                .jobId(jobId)
                 .build();
 
         return commandGateway.send(command);

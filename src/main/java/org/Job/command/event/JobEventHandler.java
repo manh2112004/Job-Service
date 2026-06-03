@@ -31,6 +31,9 @@ public class JobEventHandler {
     @Autowired
     private JobReportRepository jobReportRepository;
 
+    @Autowired
+    private SavedJobRepository savedJobRepository;
+
     @EventHandler
     @Transactional
     public void on(JobCreatedEvent event) {
@@ -401,6 +404,26 @@ public class JobEventHandler {
                 .createdAt(event.getCreatedAt())
                 .build();
         jobReportRepository.save(report);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(JobSavedEvent event) {
+        if (!savedJobRepository.existsById(event.getId())) {
+            SavedJob savedJob = SavedJob.builder()
+                    .id(event.getId())
+                    .candidateId(event.getCandidateId())
+                    .jobId(event.getJobId())
+                    .savedAt(LocalDateTime.now())
+                    .build();
+            savedJobRepository.save(savedJob);
+        }
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(JobUnsavedEvent event) {
+        savedJobRepository.deleteById(event.getId());
     }
 }
 
