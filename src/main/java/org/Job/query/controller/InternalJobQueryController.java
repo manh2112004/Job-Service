@@ -29,9 +29,12 @@ public class InternalJobQueryController {
         return queryGateway.query(
                 new GetJobDetailQuery(jobId),
                 ResponseTypes.instanceOf(org.Job.query.model.response.JobDetailResponse.class)
-        ).thenApply(res -> Map.of(
-                "id", jobId,
-                "companyId", res.getCompany() != null ? res.getCompany().getId() : ""
-        )).exceptionally(err -> Map.of());
+        ).thenApply(res -> {
+            java.util.Map<String, String> map = new java.util.HashMap<>();
+            map.put("id", jobId);
+            map.put("title", res.getTitle());
+            map.put("companyId", res.getCompany() != null ? res.getCompany().getId() : "");
+            return map;
+        }).exceptionally(err -> java.util.Map.of());
     }
 }

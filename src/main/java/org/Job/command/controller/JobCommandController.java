@@ -10,11 +10,16 @@ import org.Job.command.model.request.CreateJobBenefitRequest;
 import org.Job.command.model.request.UpdateJobBenefitRequest;
 import org.Job.command.model.request.CreateJobReportRequest;
 import org.Job.command.service.JobService;
+import org.Job.event.KafkaEvent;
+import org.Job.event.KafkaEventProducer;
+import org.Job.event.KafkaTopic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -24,12 +29,27 @@ public class JobCommandController {
     @Autowired
     private JobService jobService;
 
+    @Autowired
+    private KafkaEventProducer kafkaEventProducer;
+
     @PostMapping
     public CompletableFuture<String> createJob(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateJobRequest request
     ) {
-        return jobService.createJob(jwt.getSubject(), request);
+        return jobService.createJob(jwt.getSubject(), request).thenApply(jobId -> {
+            kafkaEventProducer.sendEvent(KafkaTopic.JOB_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("JobCreatedEvent")
+                    .userId(jwt.getSubject())
+                    .referenceId(jobId)
+                    .referenceType("JOB")
+                    .title("Đăng tin tuyển dụng thành công")
+                    .message("Tin tuyển dụng '" + request.getTitle() + "' đã được tạo thành công.")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return jobId;
+        });
     }
 
     @PutMapping("/{jobId}")
@@ -38,7 +58,19 @@ public class JobCommandController {
             @PathVariable String jobId,
             @Valid @RequestBody UpdateJobRequest request
     ) {
-        return jobService.updateJob(jwt.getSubject(), jobId, request);
+        return jobService.updateJob(jwt.getSubject(), jobId, request).thenApply(result -> {
+            kafkaEventProducer.sendEvent(KafkaTopic.JOB_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("JobUpdatedEvent")
+                    .userId(jwt.getSubject())
+                    .referenceId(jobId)
+                    .referenceType("JOB")
+                    .title("Cập nhật tin tuyển dụng")
+                    .message("Tin tuyển dụng '" + request.getTitle() + "' đã được cập nhật.")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return result;
+        });
     }
 
     @PutMapping("/{jobId}/publish")
@@ -62,7 +94,37 @@ public class JobCommandController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String jobId
     ) {
-        return jobService.closeJob(jwt.getSubject(), jobId);
+        return jobService.closeJob(jwt.getSubject(), jobId).thenApply(result -> {
+            kafkaEventProducer.sendEvent(KafkaTopic.JOB_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("JobClosedEvent")
+                    .userId(jwt.getSubject())
+                    .referenceId(jobId)
+                    .referenceType("JOB")
+                    .title("Đóng tin tuyển dụng")
+                    .message("Tin tuyển dụng của bạn đã đóng.")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return result;
+        });
+    }
+
+    @PutMapping("/{jobId}/expire")
+    public CompletableFuture<String> expireJob(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String jobId
+    ) {
+        kafkaEventProducer.sendEvent(KafkaTopic.JOB_EVENTS, KafkaEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventType("JobExpiredEvent")
+                .userId(jwt.getSubject())
+                .referenceId(jobId)
+                .referenceType("JOB")
+                .title("Tin tuyển dụng hết hạn")
+                .message("Tin tuyển dụng của bạn đã hết hạn.")
+                .createdAt(LocalDateTime.now())
+                .build());
+        return CompletableFuture.completedFuture("Đã chuyển trạng thái tin tuyển dụng sang hết hạn thành công");
     }
 
     @PutMapping("/{jobId}/reopen")
